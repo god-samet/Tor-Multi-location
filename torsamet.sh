@@ -59,8 +59,8 @@ function show_menu() {
     echo "11) Edit Local IP"
     echo "0) Exit"
     echo -e "${YELLOW}=========================${NC}"
-    echo "Your choice:"
-    read choice
+    echo "Your choice:" read choice
+    
 }
 
 function add_instance() {
@@ -212,14 +212,13 @@ while true; do
         2) uninstall_tor ;;
         3) add_instance ;;
         4) view_instances ;;
-        5) list_ips_ports ;;
-        6) delete_instance ;;
-        7) schedule_ip_change ;;
-        8) show_current_ip ;;
-        9) test_connection ;;
-        10) check_service_status ;;
-        11) backup_torrc ;;
-        12) edit_local_ip ;;
+        5) delete_instance ;;
+        6) schedule_ip_change ;;
+        7) show_current_ip ;;
+        8) test_connection ;;
+        9) check_service_status ;;
+        10) backup_torrc ;;
+        11) edit_local_ip ;;
         0) break ;;
         *)
             echo -e "${RED}Invalid choice, please try again.${NC}"
