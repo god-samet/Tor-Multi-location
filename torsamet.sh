@@ -22,10 +22,9 @@ function check_tor_status() {
     fi
 }
 
-
 function install_tor() {
     echo -e "${YELLOW}Installing Tor...${NC}"
-    apt update && apt install -y tor
+    sudo apt update && sudo apt install -y tor
     if [[ $? -eq 0 && -f /usr/bin/tor ]]; then
         echo -e "${GREEN}Tor successfully installed.${NC}"
     else
@@ -35,7 +34,7 @@ function install_tor() {
 
 function uninstall_tor() {
     echo -e "${YELLOW}Removing Tor...${NC}"
-    apt remove -y tor && apt purge -y tor
+    sudo apt remove -y tor && sudo apt purge -y tor
     if [[ $? -eq 0 && ! -f /usr/bin/tor ]]; then
         echo -e "${GREEN}Tor successfully removed.${NC}"
     else
@@ -43,10 +42,10 @@ function uninstall_tor() {
     fi
 }
 
-
 # نمایش منو
 function show_menu() {
-    echo ""
+    echo "=============Script by samet========"
+    echo "======telgram id @hoot0ke:==========="
     echo -e "${YELLOW}=== Tor Management Menu ===${NC}"
     echo "1) Install Tor"
     echo "2) Uninstall Tor"
@@ -66,8 +65,6 @@ function show_menu() {
     read choice
 }
 
-
-
 function add_instance() {
     echo "Enter country code (e.g., fr, it, tr):"
     read country_code
@@ -76,19 +73,16 @@ function add_instance() {
     echo "Enter local IP (e.g., 127.0.0.1):"
     read local_ip
 
-
     if [[ ! $local_ip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
         echo -e "${RED}Invalid IP address.${NC}"
         return
     fi
 
-   
     if [[ $local_port -lt 1024 || $local_port -gt 65535 ]]; then
         echo -e "${RED}Invalid port number. Ports must be between 1024 and 65535.${NC}"
         return
     fi
 
-   
     if grep -q "SocksPort $local_ip:$local_port" $torrc_file; then
         echo -e "${RED}Port $local_port is already in use.${NC}"
         return
@@ -102,9 +96,8 @@ function add_instance() {
 
     echo -e "${GREEN}Settings for country ${country_code} with port ${local_port} added successfully.${NC}"
     cat $instance_file >> $torrc_file
-    systemctl reload tor
+    sudo systemctl reload tor
 }
-
 
 # مشاهده تنظیمات موجود
 function view_instances() {
@@ -112,47 +105,20 @@ function view_instances() {
     grep -E "SocksPort|ExitNodes" $torrc_file
 }
 
-
-function get_country() {
-    local ip=$1
-    country=$(curl -s "$geo_service/$ip" | jq -r '.country')
-    echo "$country"
-}
-
-
-function schedule_ip_change() {
-    echo "Enter the port for IP change (default: 9050):"
-    read interval_port
-    interval_port=${interval_port:-9050}
-
-    echo "How often should the IP change? (in minutes, e.g., 10):"
-    read interval
-
-    echo "*/$interval * * * * root echo 'SIGNAL NEWNYM' | nc 127.0.0.1 $interval_port" >> /etc/crontab
-    if [[ $? -eq 0 ]]; then
-        echo -e "${GREEN}IP change has been scheduled every $interval minutes for port $interval_port.${NC}"
-    else
-        echo -e "${RED}Failed to schedule IP change.${NC}"
-    fi
-}
-
-
 function delete_instance() {
     echo "**Port of the settings you want to delete:"
     read port_to_delete
-    sed -i "/SocksPort .*:$port_to_delete/,+2d" $torrc_file
+    sudo sed -i "/SocksPort .*:$port_to_delete/,+2d" $torrc_file
     echo -e "${GREEN}Port settings $port_to_delete have been deleted.${NC}"
-    systemctl reload tor
+    sudo systemctl reload tor
 }
-
 
 function schedule_ip_change() {
-    echo "**How often should the IP change? (Similar to: 10)**"
+    echo "**How often should the IP change? (minutes, e.g., 10):"
     read interval
-    echo "*/$interval * * * * root echo 'SIGNAL NEWNYM' | nc 127.0.0.1 9051" >> /etc/crontab
+    echo "*/$interval * * * * root echo 'SIGNAL NEWNYM' | nc 127.0.0.1 9051" | sudo tee -a /etc/crontab
     echo -e "${GREEN}IP change has been set to every $interval minutes.${NC}"
 }
-
 
 function show_current_ip() {
     echo "**Enter the port to check the IP:"
@@ -160,25 +126,21 @@ function show_current_ip() {
     curl --socks5-hostname 127.0.0.1:$check_port https://check.torproject.org/api/ip
 }
 
-
 function test_connection() {
     echo "**Enter the port to test the connection: "
     read test_port
     curl --socks5-hostname 127.0.0.1:$test_port https://www.google.com -I
 }
 
-
 function check_service_status() {
     echo -e "${YELLOW}Tor service status:${NC}"
-    systemctl status tor | grep "Active"
+    sudo systemctl status tor | grep "Active"
 }
-
 
 function backup_torrc() {
-    cp $torrc_file $torrc_file.bak
+    sudo cp $torrc_file $torrc_file.bak
     echo -e "${GREEN}The settings backup has been saved in the file $torrc_file.bak.${NC}"
 }
-
 
 function edit_local_ip() {
     echo "**Enter the port of the settings you want to edit:"
@@ -209,54 +171,41 @@ function edit_local_ip() {
                 # تغییر آی‌پی لوکال
                 echo "Enter new local IP (e.g., 127.0.0.2):"
                 read new_ip
-                sed -i "s/^SocksPort .*/SocksPort $new_ip:$edit_port/" $instance_file
+                sudo sed -i "s/^SocksPort .*/SocksPort $new_ip:$edit_port/" $instance_file
                 echo -e "${GREEN}Local IP for port $edit_port has been changed to $new_ip.${NC}"
-                systemctl reload tor
+                sudo systemctl reload tor
                 ;;
+
             2) 
                 # تغییر پورت
                 echo "Enter new port (e.g., 9050):"
                 read new_port
-                sed -i "s/^SocksPort .*/SocksPort 127.0.0.1:$new_port/" $instance_file
+                sudo sed -i "s/^SocksPort .*/SocksPort 127.0.0.1:$new_port/" $instance_file
                 echo -e "${GREEN}Port for local IP $edit_local_ip has been changed to $new_port.${NC}"
-                systemctl reload tor
+                sudo systemctl reload tor
                 ;;
+
             3)
                 # تغییر کشور
                 echo "Enter new country code (e.g., fr, it, tr):"
                 read new_country
-                sed -i "s/^ExitNodes.*/ExitNodes {$new_country}/" $instance_file
+                sudo sed -i "s/^ExitNodes.*/ExitNodes {$new_country}/" $instance_file
                 echo -e "${GREEN}Country for port $edit_port has been changed to $new_country.${NC}"
-                systemctl reload tor
+                sudo systemctl reload tor
                 ;;
+
             4)
                 # خروج
                 echo -e "${GREEN}Exiting the editing menu.${NC}"
                 break
                 ;;
+
             *)
-                echo -e "${RED}Invalid option!${NC}"
+                echo -e "${RED}Invalid option, please try again.${NC}"
                 ;;
         esac
     done
 }
-
-
-
-clear
-check_tor_status
-if [[ $? -ne 0 ]]; then
-    echo -e "${RED}Please install Tor to continue.${NC}"
-    echo "Do you want to install Tor now? (y/n):"
-    read install_choice
-    if [[ $install_choice == "y" || $install_choice == "Y" ]]; then
-        install_tor
-    else
-        echo -e "${RED}Exiting script as Tor is not installed.${NC}"
-        exit 1
-    fi
-fi
-
 
 while true; do
     show_menu
@@ -265,7 +214,7 @@ while true; do
         2) uninstall_tor ;;
         3) add_instance ;;
         4) view_instances ;;
-        5) list_all_ips_and_ports ;;
+        5) list_ips_ports ;;
         6) delete_instance ;;
         7) schedule_ip_change ;;
         8) show_current_ip ;;
@@ -273,8 +222,9 @@ while true; do
         10) check_service_status ;;
         11) backup_torrc ;;
         12) edit_local_ip ;;
-        0) echo -e "${GREEN}Exiting script.${NC}" ; break ;;
-        *) echo -e "${RED}Invalid option!${NC}" ;;
+        0) break ;;
+        *)
+            echo -e "${RED}Invalid choice, please try again.${NC}"
+            ;;
     esac
 done
-
