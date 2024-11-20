@@ -46,7 +46,7 @@ chown -R debian-tor:debian-tor $instances_dir
 chmod -R 700 $instances_dir
 
 # Download the main script from GitHub if it's not already present
-script_url="https://raw.githubusercontent.com/god-samet/Tor-Multi-location/refs/heads/main/torsamet.sh
+script_url="https://raw.githubusercontent.com/god-samet/Tor-Multi-location/main/torsamet.sh"
 script_name="torsamet.sh"
 
 if [[ ! -f $script_name ]]; then
@@ -85,6 +85,10 @@ EOF
 # Set executable permissions for the tor-samet wrapper script
 chmod +x /usr/local/bin/tor-samet
 
+# Clean up the screen
+clear
+
 # Execute the main script
 echo -e "${YELLOW}Running the main script...${NC}"
 bash $script_name
+
