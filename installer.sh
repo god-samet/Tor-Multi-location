@@ -46,7 +46,7 @@ chown -R debian-tor:debian-tor $instances_dir
 chmod -R 700 $instances_dir
 
 # Download the main script from GitHub if it's not already present
-script_url="https://github.com/god-samet/Tor-Multi-location/raw/main/torsamet.sh"
+script_url="https://github.com/god-samet/Tor-Multi-location/blob/main/torsamet.sh"
 script_name="torsamet.sh"
 
 if [[ ! -f $script_name ]]; then
