@@ -1,16 +1,15 @@
 #!/bin/bash
 
-# تنظیمات اولیه
+
 torrc_file="/etc/tor/torrc"
 instances_dir="/etc/tor/instances"
 
-# رنگ‌ها برای رابط کاربری
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 
-# بررسی نصب بودن Tor
+
 function check_tor_status() {
     if command -v tor > /dev/null; then
         echo -e "${GREEN}Tor is already installed.${NC}"
@@ -42,7 +41,7 @@ function uninstall_tor() {
     fi
 }
 
-# نمایش منو
+
 function show_menu() {
     echo "=============Script by samet========"
     echo "======telgram id @hoot0ke:==========="
@@ -87,7 +86,7 @@ function add_instance() {
         return
     fi
 
-    # ایجاد تنظیمات جدید
+   
     instance_file="$instances_dir/torrc-$local_port"
     echo "SocksPort $local_ip:$local_port" > $instance_file
     echo "ExitNodes {$country_code}" >> $instance_file
@@ -98,7 +97,7 @@ function add_instance() {
     sudo systemctl reload tor
 }
 
-# مشاهده تنظیمات موجود
+
 function view_instances() {
     echo -e "${YELLOW}Available settings:${NC}"
     grep -E "SocksPort|ExitNodes" $torrc_file
@@ -167,7 +166,7 @@ function edit_local_ip() {
 
         case $choice in
             1) 
-                # تغییر آی‌پی لوکال
+                
                 echo "Enter new local IP (e.g., 127.0.0.2):"
                 read new_ip
                 sudo sed -i "s/^SocksPort .*/SocksPort $new_ip:$edit_port/" $instance_file
@@ -176,7 +175,7 @@ function edit_local_ip() {
                 ;;
 
             2) 
-                # تغییر پورت
+               
                 echo "Enter new port (e.g., 9050):"
                 read new_port
                 sudo sed -i "s/^SocksPort .*/SocksPort 127.0.0.1:$new_port/" $instance_file
@@ -185,7 +184,7 @@ function edit_local_ip() {
                 ;;
 
             3)
-                # تغییر کشور
+                
                 echo "Enter new country code (e.g., fr, it, tr):"
                 read new_country
                 sudo sed -i "s/^ExitNodes.*/ExitNodes {$new_country}/" $instance_file
@@ -194,7 +193,7 @@ function edit_local_ip() {
                 ;;
 
             4)
-                # خروج
+                
                 echo -e "${GREEN}Exiting the editing menu.${NC}"
                 break
                 ;;
