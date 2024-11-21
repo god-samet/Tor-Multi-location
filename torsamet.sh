@@ -114,6 +114,7 @@ function validate_country_code() {
 # تابع اصلی برای اضافه کردن تنظیمات
 function add_instance() {
     while true; do
+        clear  
         echo -e "${YELLOW}Enter country code (e.g., fr, it, tr):${NC}"
         read country_code
 
@@ -196,49 +197,53 @@ function add_instance() {
     clear
     show_main_menu
 }
+
+# تابع برای نمایش تنظیمات موجود
 function view_instances() {
     while true; do
-        clear  # Clear the screen
+        clear  # پاک‌کردن صفحه
         echo -e "${YELLOW}Available settings:${NC}"
         
-        # Check for settings in the torrc file
+        # بررسی تنظیمات در فایل torrc
         settings=$(grep -E "SocksPort|ExitNodes" $torrc_file)
         
         if [ -z "$settings" ]; then
-            echo -e "${RED}Nothing in the file!${NC}"  # If no settings are found
+            echo -e "${RED}Nothing in the file!${NC}"  # اگر هیچ تنظیماتی وجود ندارد
         else
-            echo "$settings"  # Display the available settings
+            echo "$settings"  # نمایش تنظیمات موجود
         fi
 
+        # پیام برای ادامه یا خروج
         echo -e "\nPress Enter to return to the menu..."
-        read -p "Press Enter to continue: "  # Wait for user input
-        if [ -z "$REPLY" ]; then
-            break  # If Enter is pressed, exit the loop and return to the menu
-        fi
+        read  # منتظر ورودی از کاربر
+        break  # اگر کاربر اینتر بزند، از حلقه خارج می‌شود
     done
-    }
+    show_menu  # نمایش منوی اصلی پس از خروج از حلقه
+}
+
+# تابع برای حذف تنظیمات
 function delete_instance() {
     while true; do
-        echo "**Enter the port of the settings you want to delete (or press Enter to exit):"
+        echo -e "\n**Enter the port of the settings you want to delete (or press Enter to exit):"
         read port_to_delete
 
         if [ -z "$port_to_delete" ]; then
-            # If user presses Enter without entering anything, exit the loop
+            # اگر کاربر اینتر بزند بدون وارد کردن پورت، از حلقه خارج می‌شود
             break
         fi
 
-        # Delete the port settings
+        # حذف تنظیمات مربوط به پورت وارد شده
         sudo sed -i "/SocksPort .*:$port_to_delete/,+2d" $torrc_file
-        echo -e "${GREEN}Port settings $port_to_delete have been deleted.${NC}"
+        echo -e "${GREEN}Port settings for $port_to_delete have been deleted.${NC}"
 
-        # Reload Tor service to apply changes
+        # بارگذاری مجدد سرویس Tor برای اعمال تغییرات
         sudo systemctl reload tor
 
-        # Clear the screen to show updated status
+        # پاک‌سازی صفحه برای نمایش وضعیت به روز شده
         clear
     done
 
-    # After exiting the loop, show the menu again
+    # نمایش منوی اصلی بعد از خروج از حلقه
     show_menu
 }
 
