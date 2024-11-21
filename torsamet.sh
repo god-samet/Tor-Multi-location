@@ -215,11 +215,14 @@ function view_instances() {
 
         # پیام برای ادامه یا خروج
         echo -e "\nPress Enter to return to the menu..."
-        read  # منتظر ورودی از کاربر
-        break  # اگر کاربر اینتر بزند، از حلقه خارج می‌شود
+        read -p "Press Enter to continue: "  # منتظر ورودی از کاربر
+        if [ -z "$REPLY" ]; then
+            break  # اگر کاربر اینتر بزند، از حلقه خارج می‌شود
+        fi
     done
     show_menu  # نمایش منوی اصلی پس از خروج از حلقه
 }
+
 
 # تابع برای حذف تنظیمات
 function delete_instance() {
