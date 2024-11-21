@@ -20,7 +20,6 @@ function check_tor_status() {
         return 1
     fi
 }
-# نمایش لوگو با استفاده از ASCII Art
 function show_logo() {
     echo -e "${CYAN}======================================${NC}"
     echo -e "${MAGENTA}                    _________  ________  ________          ________  ________  _____ ______   _______  _________    ${NC}"    
@@ -33,6 +32,7 @@ function show_logo() {
     echo -e "${YELLOW}                                                               \|_________|                                               ${NC}"
     echo -e "${CYAN}======================================${NC}"
 }
+
 
 
 function install_tor() {
