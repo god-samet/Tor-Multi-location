@@ -111,10 +111,8 @@ function validate_country_code() {
     return 0
 }
 
-# تابع اصلی برای اضافه کردن تنظیمات
 function add_instance() {
     while true; do
-        clear  
         echo -e "${YELLOW}Enter country code (e.g., fr, it, tr):${NC}"
         read country_code
 
@@ -143,13 +141,7 @@ function add_instance() {
         # بررسی IP وارد شده
         validate_ip $local_ip || return
 
-        # چک کردن دایرکتوری‌ها و فایل‌های لازم
-        if [[ ! -d $INSTANCES_DIR ]]; then
-            echo -e "${RED}Instances directory not found: $INSTANCES_DIR${NC}"
-            echo "$(date) - Error: Instances directory not found: $INSTANCES_DIR" >> $LOG_FILE
-            return
-        fi
-
+        # چک کردن فایل اصلی
         if [[ ! -f $TORRC_FILE ]]; then
             echo -e "${RED}Tor configuration file not found: $TORRC_FILE${NC}"
             echo "$(date) - Error: Tor configuration file not found: $TORRC_FILE" >> $LOG_FILE
@@ -163,90 +155,106 @@ function add_instance() {
             return
         fi
 
-        # ایجاد تنظیمات جدید
-        instance_file="$INSTANCES_DIR/torrc-$local_port"
-        echo "SocksPort $local_ip:$local_port" > $instance_file
-        echo "ExitNodes {$country_code}" >> $instance_file
-        echo "StrictNodes 1" >> $instance_file
+        # اضافه کردن تنظیمات مستقیماً به فایل اصلی
+        {
+            echo "SocksPort $local_ip:$local_port"
+            echo "ExitNodes {$country_code}"
+            echo "StrictNodes 1"
+        } | sudo tee -a $TORRC_FILE > /dev/null
 
-        # افزودن تنظیمات به فایل اصلی
-        cat $instance_file >> $TORRC_FILE
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}Instance created successfully with the following details:${NC}"
+            echo -e "Country code: $country_code"
+            echo -e "Local IP: $local_ip"
+            echo -e "Port: $local_port"
+        else
+            echo -e "${RED}Failed to write to $TORRC_FILE.${NC}"
+            return
+        fi
 
-        # نمایش اطلاعات
-        echo -e "${GREEN}Instance created successfully with the following details:${NC}"
-        echo -e "Country code: $country_code"
-        echo -e "Local IP: $local_ip"
-        echo -e "Port: $local_port"
-        echo -e "Instance configuration saved to $instance_file"
+        # بارگذاری مجدد تنظیمات سرویس Tor
+        sudo systemctl reload tor
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}Tor service reloaded successfully.${NC}"
+        else
+            echo -e "${RED}Failed to reload Tor service. Please check the configuration.${NC}"
+        fi
 
         # درخواست برای ادامه یا خروج
         echo -e "${YELLOW}Press Enter to add another instance or type 'exit' to go back to the main menu:${NC}"
         read user_input
         if [[ -z $user_input ]]; then
-            # ادامه به حلقه
             echo -e "${CYAN}Adding new instance...${NC}"
             continue
         elif [[ "$user_input" == "exit" ]]; then
-            # خروج از حلقه
             echo -e "${CYAN}Exiting...${NC}"
             break
         fi
     done
-    
-    # پاک‌سازی صفحه و نمایش منوی اصلی
-    clear
-    show_main_menu
 }
 
-# تابع برای نمایش تنظیمات موجود
+ 
 function view_instances() {
-    while true; do
-        clear  # پاک‌کردن صفحه
-        echo -e "${YELLOW}Available settings:${NC}"
-        
-        # بررسی تنظیمات در فایل torrc
-        settings=$(grep -E "SocksPort|ExitNodes" $torrc_file)
-        
-        if [ -z "$settings" ]; then
-            echo -e "${RED}Nothing in the file!${NC}"  # اگر هیچ تنظیماتی وجود ندارد
-        else
-            echo "$settings"  # نمایش تنظیمات موجود
-        fi
+    clear
+    # مسیر فایل تنظیمات Tor
+    TORRC_FILE="/etc/tor/torrc"
 
-        # پیام برای ادامه یا خروج
-        echo -e "\nPress Enter to return to the menu..."
-        read -p "Press Enter to continue: "  # منتظر ورودی از کاربر
-        if [ -z "$REPLY" ]; then
-            break  # اگر کاربر اینتر بزند، از حلقه خارج می‌شود
+    # بررسی اینکه آیا فایل تنظیمات وجود دارد و دسترسی به آن ممکن است
+    if [[ ! -f "$TORRC_FILE" ]]; then
+        echo -e "${RED}Configuration file $TORRC_FILE not found!${NC}"
+        return
+    fi
+
+    if [[ ! -r "$TORRC_FILE" ]]; then
+        echo -e "${RED}Cannot read $TORRC_FILE. Check permissions.${NC}"
+        return
+    fi
+
+    # نمایش تنظیمات
+    echo -e "${YELLOW}Current Tor configurations:${NC}"
+
+    # جستجو برای تنظیمات SocksPort یا ExitNodes
+    if grep -qE "SocksPort|ExitNodes" "$TORRC_FILE"; then
+        echo -e "${CYAN}Extracted IPs:${NC}"
+        # استخراج فقط آی‌پی‌ها و پورت‌ها
+        grep -E "SocksPort|ExitNodes" "$TORRC_FILE" | awk '{print $2}' | sed 's/^/  /'
+    else
+        echo -e "${RED}No configurations with IPs found in $TORRC_FILE.${NC}"
+    fi
+
+    # نگه‌داشتن برنامه تا فشردن Enter
+    echo -e "${YELLOW}\nPress Enter to return to the menu.${NC}"
+    while true; do
+        read -s -n 1 key
+        if [[ $key == "" ]]; then
+            break
         fi
     done
-    show_menu  # نمایش منوی اصلی پس از خروج از حلقه
 }
 
 
-# تابع برای حذف تنظیمات
 function delete_instance() {
     while true; do
-        echo -e "\n**Enter the port of the settings you want to delete (or press Enter to exit):"
+        echo "**Enter the port of the settings you want to delete (or press Enter to exit):"
         read port_to_delete
 
         if [ -z "$port_to_delete" ]; then
-            # اگر کاربر اینتر بزند بدون وارد کردن پورت، از حلقه خارج می‌شود
+            # If user presses Enter without entering anything, exit the loop
             break
         fi
 
-        # حذف تنظیمات مربوط به پورت وارد شده
+        # Delete the port settings
         sudo sed -i "/SocksPort .*:$port_to_delete/,+2d" $torrc_file
-        echo -e "${GREEN}Port settings for $port_to_delete have been deleted.${NC}"
+        echo -e "${GREEN}Port settings $port_to_delete have been deleted.${NC}"
 
-        # بارگذاری مجدد سرویس Tor برای اعمال تغییرات
+        # Reload Tor service to apply changes
         sudo systemctl reload tor
 
-        # پاک‌سازی صفحه برای نمایش وضعیت به روز شده
+        # Clear the screen to show updated status
         clear
     done
 
-    # نمایش منوی اصلی بعد از خروج از حلقه
+    # After exiting the loop, show the menu again
     show_menu
 }
 
@@ -279,33 +287,33 @@ function schedule_ip_change() {
 
 function show_current_ip() {
     while true; do
-        clear  # Clear the screen
-        echo "**Enter the port to check the IP (or press Enter to exit):"
+        clear  # پاک کردن صفحه
+        echo "** Enter the port to check the IP (or press Enter to exit):"
         read check_port
 
         if [ -z "$check_port" ]; then
-            # If no input is given, exit the loop and return to the menu
+            # اگر ورودی خالی بود، خروج از حلقه و بازگشت به منو
             break
         fi
 
-        # Check the IP using the entered port
+        # بررسی آی‌پی با استفاده از پورتی که کاربر وارد کرده است
         echo -e "Current IP: $(curl --socks5-hostname 127.0.0.1:$check_port https://check.torproject.org/api/ip | jq '.ip')"
 
-        # Wait for user to press Enter to continue or exit
-        echo -e "\nPress Enter to return to the menu..."
-        read -p "Press Enter to continue: "  # Wait for user input
+        # نگه‌داشتن برنامه تا زمانی که کاربر کلید Enter را بزند
+        while true; do
+            echo -e "\nPress Enter to return to the menu..."
+            read -s -n 1 key  # خواندن یک کاراکتر از ورودی
 
-        if [ -z "$REPLY" ]; then
-            break  # If Enter is pressed, exit the loop and return to the menu
-        fi
-
-        # Clear the screen to show updated status
-        clear
+            if [[ $key == "" ]]; then
+                break  # زمانی که Enter زده شد، از حلقه خارج شو
+            fi
+        done
     done
 
-    # After exiting the loop, show the menu again
+    # پس از خروج از حلقه، بازگشت به منو
     show_menu
 }
+
 
 
 function test_connection() {
@@ -332,7 +340,7 @@ function test_connection() {
         fi
 
         # Clear the screen to show updated status
-        clear
+
     done
 
     # After exiting the loop, show the menu again
@@ -422,7 +430,6 @@ function edit_local_ip() {
     done
 
     # بعد از تمام شدن عملیات، صفحه پاک شود و منوی اصلی نشان داده شود
-    clear
     show_menu
 }
 
