@@ -43,6 +43,8 @@ function uninstall_tor() {
 
 function show_menu() {
     echo -e "${CYAN}======================================${NC}"
+    echo -e "${GREEN}            Script by SAMET          ${NC}"
+    echo -e "${GREEN}         telgram id :  @hoot0ke       ${NC}"
     echo -e "${GREEN}        Tor Samet Management Script       ${NC}"
     echo -e "${CYAN}======================================${NC}"
     
